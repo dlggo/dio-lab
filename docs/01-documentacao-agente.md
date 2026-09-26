@@ -31,11 +31,19 @@ O funcionamento atual do agente segue o fluxo:
 5. envia a pergunta e o contexto ao modelo de linguagem;
 6. utiliza um System Prompt para definir o comportamento da BIA;
 7. recebe a resposta do modelo;
-8. apresenta uma resposta baseada nas informações disponíveis no contexto.
+8. apresenta a resposta ao usuário por meio da aplicação que utilizar o agente.
 
 A comunicação com o modelo de linguagem é realizada por meio da biblioteca **OpenAI Python SDK**, utilizando o endpoint compatível com a API do **OpenRouter**.
 
 O modelo utilizado é configurado por variável de ambiente, permitindo alterar o modelo sem modificar diretamente o código do agente.
+
+Atualmente, o projeto utiliza:
+
+```text
+OPENROUTER_MODEL=openrouter/free
+```
+
+A chave da API é armazenada em variável de ambiente e não faz parte do código versionado.
 
 ### Público-Alvo
 
@@ -92,11 +100,13 @@ A BIA deve evitar explicações excessivamente técnicas quando uma explicação
 
 **BIA:**
 
-> Com base nas suas transações financeiras registradas, você gastou R$ 570,00 com alimentação.
+> Com base nas suas transações financeiras registradas, você gastou **R$ 570,00** com alimentação.
 >
 > O cálculo considera R$ 450,00 no supermercado e R$ 120,00 no restaurante.
 >
 > **Cálculo:** R$ 450,00 + R$ 120,00 = R$ 570,00.
+>
+> Fonte utilizada: base de transações financeiras.
 
 ---
 
@@ -108,7 +118,9 @@ A BIA deve evitar explicações excessivamente técnicas quando uma explicação
 
 **BIA:**
 
-> Seu perfil de investidor registrado na base é moderado.
+> Seu perfil de investidor registrado na base é **moderado**.
+>
+> Fonte utilizada: perfil do investidor.
 
 ---
 
@@ -120,7 +132,9 @@ A BIA deve evitar explicações excessivamente técnicas quando uma explicação
 
 **BIA:**
 
-> Sim. Conforme o histórico de atendimento, você já fez uma pergunta sobre CDB em 15 de setembro de 2025, pelo canal chat, tratando da rentabilidade e dos prazos do produto.
+> Sim. Conforme o histórico de atendimento, você já fez uma pergunta sobre CDB em **15 de setembro de 2025**, pelo canal **chat**, tratando da rentabilidade e dos prazos do produto.
+>
+> Fonte utilizada: histórico de atendimento.
 
 ---
 
@@ -132,9 +146,18 @@ A BIA deve evitar explicações excessivamente técnicas quando uma explicação
 
 **BIA:**
 
-> Com base na base de conhecimento disponível, estão cadastrados produtos como Tesouro Selic, CDB Liquidez Diária, LCI/LCA, Fundo Multimercado e Fundo de Ações.
-
-A resposta deve utilizar somente as características registradas na base de produtos financeiros.
+> Com base na base de conhecimento disponível, estão cadastrados produtos como:
+>
+> * Tesouro Selic;
+> * CDB Liquidez Diária;
+> * LCI/LCA;
+> * Fundo Multimercado;
+> * Fundo de Ações.
+>
+> As informações sobre os produtos devem ser obtidas somente da base
+de conhecimento. O modelo pode organizar a apresentação dessas
+informações, mas não deve acrescentar características que não estejam
+registradas na base.
 
 ---
 
@@ -156,7 +179,14 @@ A BIA não deve criar previsões ou valores que não estejam presentes na base d
 
 ## Visão geral
 
-A arquitetura atual da BIA possui um núcleo em Python responsável por carregar a base de conhecimento, identificar as fontes relevantes, montar o contexto e realizar a comunicação com o modelo de linguagem por meio do OpenRouter.
+A arquitetura atual da BIA possui um núcleo em Python responsável por:
+
+1. carregar a base de conhecimento;
+2. identificar as fontes relevantes para cada pergunta;
+3. montar o contexto;
+4. aplicar o System Prompt;
+5. enviar a solicitação ao modelo de linguagem;
+6. retornar a resposta gerada.
 
 A base de conhecimento utilizada atualmente é composta por quatro arquivos:
 
@@ -165,7 +195,7 @@ A base de conhecimento utilizada atualmente é composta por quatro arquivos:
 * `data/perfil_investidor.json`
 * `data/produtos_financeiros.json`
 
-O agente utiliza o contexto selecionado para enviar ao modelo somente as informações consideradas relevantes para a pergunta.
+O agente utiliza a seleção de contexto para enviar ao modelo as informações consideradas relevantes para a pergunta.
 
 ## Fluxo do agente
 
@@ -199,17 +229,17 @@ flowchart TD
 
 ## Componentes
 
-| Componente                  | Responsabilidade                                      |
-| --------------------------- | ----------------------------------------------------- |
-| `agente.py`                 | Núcleo do agente e integração com a base e o LLM      |
-| `config.py`                 | Carregamento das configurações do OpenRouter          |
-| `transacoes.csv`            | Histórico de transações financeiras                   |
-| `historico_atendimento.csv` | Histórico de atendimentos anteriores                  |
-| `perfil_investidor.json`    | Perfil, renda, objetivos e metas do cliente           |
-| `produtos_financeiros.json` | Produtos financeiros disponíveis                      |
-| OpenAI Python SDK           | Biblioteca utilizada para comunicação com a API       |
-| OpenRouter                  | Endpoint utilizado para acesso ao modelo de linguagem |
-| System Prompt               | Define o comportamento e as restrições da BIA         |
+| Componente                  | Responsabilidade                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `agente.py`                 | Núcleo do agente, carregamento da base, seleção de contexto e integração com o LLM |
+| `config.py`                 | Carregamento das configurações do OpenRouter                                       |
+| `transacoes.csv`            | Histórico de transações financeiras                                                |
+| `historico_atendimento.csv` | Histórico de atendimentos anteriores                                               |
+| `perfil_investidor.json`    | Perfil, renda, objetivos e metas do cliente                                        |
+| `produtos_financeiros.json` | Produtos financeiros disponíveis                                                   |
+| OpenAI Python SDK           | Biblioteca utilizada para comunicação com a API compatível                         |
+| OpenRouter                  | Serviço utilizado como endpoint para acesso ao modelo de linguagem                 |
+| System Prompt               | Define o comportamento e as restrições da BIA                                      |
 
 ## Configuração do modelo
 
@@ -222,15 +252,15 @@ OPENROUTER_API_KEY
 OPENROUTER_MODEL
 ```
 
-O arquivo `.env` é utilizado localmente e não deve ser versionado no GitHub.
+O arquivo `.env` é utilizado localmente e está configurado no `.gitignore`, evitando que a chave seja enviada ao GitHub.
 
-O modelo atualmente utilizado no projeto é configurado como:
+O modelo atualmente configurado no projeto é:
 
 ```text
 openrouter/free
 ```
 
-Isso permite testar a integração utilizando o modelo disponibilizado pelo roteamento gratuito do OpenRouter.
+A utilização de uma variável de ambiente para o modelo permite alterar posteriormente o modelo utilizado sem modificar diretamente o código do agente.
 
 ---
 
@@ -260,10 +290,12 @@ transacoes
         ↓
 contexto das transações
         ↓
-LLM
+OpenRouter
+        ↓
+modelo de linguagem
 ```
 
-Enquanto uma pergunta como:
+Para uma pergunta como:
 
 ```text
 "Qual é o meu perfil de investidor?"
@@ -272,10 +304,12 @@ perfil
         ↓
 contexto do perfil
         ↓
-LLM
+OpenRouter
+        ↓
+modelo de linguagem
 ```
 
-pode utilizar somente a fonte relacionada ao perfil.
+o agente utiliza a fonte relacionada ao perfil.
 
 ### Restrição do System Prompt
 
@@ -302,7 +336,7 @@ Exemplo:
 Pergunta:
 Qual será a taxa Selic em dezembro de 2027?
 
-Resposta esperada:
+Resposta:
 Não há dados suficientes na base de conhecimento para informar
 ou prever a taxa Selic em dezembro de 2027.
 ```
@@ -319,22 +353,26 @@ A BIA também possui instruções para não fornecer:
 
 A aplicação utiliza dados mockados fornecidos para o projeto, evitando a utilização de dados financeiros reais durante o desenvolvimento.
 
-## Limitações atuais
+---
+
+# 5. Limitações Atuais
 
 A implementação atual possui algumas limitações que serão consideradas nas próximas etapas do projeto:
 
-* a seleção de fontes utiliza regras baseadas em palavras-chave;
+* a seleção das fontes utiliza regras baseadas em palavras-chave;
 * a interface final de chatbot ainda está em desenvolvimento;
 * a avaliação formal das respostas ainda será documentada;
 * ainda não existe uma métrica automatizada de qualidade das respostas;
 * o histórico de conversa entre mensagens ainda não foi implementado;
-* a base de conhecimento atual utiliza os dados mockados fornecidos pelo desafio.
+* a base de conhecimento atual utiliza os dados mockados fornecidos pelo desafio;
+* a BIA responde com base nas informações disponibilizadas no contexto e não realiza consultas externas;
+* a qualidade da resposta também depende do modelo de linguagem utilizado pelo OpenRouter.
 
 Essas limitações fazem parte do estágio atual do protótipo e poderão ser tratadas nas próximas etapas do projeto.
 
 ---
 
-# 5. Estado Atual do Agente
+# 6. Estado Atual do Agente
 
 Atualmente, o núcleo da BIA já possui:
 
@@ -348,28 +386,48 @@ Atualmente, o núcleo da BIA já possui:
 * tratamento de informações não disponíveis;
 * testes básicos de diferentes tipos de perguntas.
 
-Exemplos de cenários já testados:
+### Cenários já testados
 
 ```text
 Quanto gastei com alimentação?
         ↓
 Consulta de transações
+        ↓
+R$ 570,00
+```
 
+```text
 Qual é o meu perfil de investidor?
         ↓
 Consulta do perfil
+        ↓
+Perfil moderado
+```
 
+```text
 Já perguntei sobre CDB?
         ↓
 Consulta do histórico
+        ↓
+Atendimento registrado em 15/09/2025
+```
 
+```text
 Quais produtos financeiros estão disponíveis?
         ↓
 Consulta de produtos
-
-Qual será a taxa Selic em dezembro de 2027?
         ↓
-Informação não disponível na base
+5 produtos cadastrados na base
 ```
 
-O próximo estágio do projeto será evoluir a documentação e a aplicação, incluindo a avaliação formal do agente, a interface de chatbot e a preparação do pitch final.
+```text
+Qual será a taxa Selic em dezembro de 2027?
+        ↓
+Consulta da base
+        ↓
+Informação não disponível
+```
+
+Os testes demonstram que o agente consegue utilizar diferentes fontes da base de conhecimento e responder de acordo com o contexto fornecido.
+
+O próximo estágio do projeto será desenvolver a avaliação formal do agente, a interface de chatbot e a preparação do pitch final.
