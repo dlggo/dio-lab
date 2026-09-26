@@ -1,81 +1,164 @@
-# Documentação do Agente
+# Documentação do Agente — BIA do Futuro
 
-## Caso de Uso
+## 1. Caso de Uso
 
 ### Problema
-> Qual problema financeiro seu agente resolve?
 
-[Sua descrição aqui]
+O cliente possui diferentes informações financeiras armazenadas em fontes
+separadas, como transações, perfil de investidor, histórico de atendimento,
+metas financeiras e produtos disponíveis.
+
+Sem uma interface de consulta inteligente, é necessário procurar essas
+informações manualmente em diferentes arquivos.
+
+Além disso, uma resposta financeira gerada por IA precisa utilizar apenas
+informações confiáveis e disponíveis na base de conhecimento, evitando a
+invenção de valores, transações, produtos ou características do cliente.
 
 ### Solução
-> Como o agente resolve esse problema de forma proativa?
 
-[Sua descrição aqui]
+A **BIA do Futuro** é uma assistente financeira pessoal baseada em IA
+generativa.
+
+O agente utiliza uma base de conhecimento composta por arquivos CSV e JSON
+e identifica quais fontes são relevantes para cada pergunta.
+
+A partir dessas fontes, o sistema:
+
+1. recebe a pergunta do cliente;
+2. identifica as fontes de conhecimento relacionadas à pergunta;
+3. monta um contexto com os dados dessas fontes;
+4. envia a pergunta e o contexto para um modelo de linguagem;
+5. utiliza um System Prompt para orientar o comportamento da BIA;
+6. retorna uma resposta baseada nas informações disponíveis.
+
+A comunicação com o modelo de linguagem é realizada utilizando a biblioteca
+OpenAI Python SDK compatível com a API do OpenRouter.
 
 ### Público-Alvo
-> Quem vai usar esse agente?
 
-[Sua descrição aqui]
+O público-alvo da BIA é composto por clientes que desejam consultar e
+organizar suas informações financeiras de maneira simples e conversacional.
 
----
-
-## Persona e Tom de Voz
-
-### Nome do Agente
-[Nome escolhido]
-
-### Personalidade
-> Como o agente se comporta? (ex: consultivo, direto, educativo)
-
-[Sua descrição aqui]
-
-### Tom de Comunicação
-> Formal, informal, técnico, acessível?
-
-[Sua descrição aqui]
-
-### Exemplos de Linguagem
-- Saudação: [ex: "Olá! Como posso ajudar com suas finanças hoje?"]
-- Confirmação: [ex: "Entendi! Deixa eu verificar isso para você."]
-- Erro/Limitação: [ex: "Não tenho essa informação no momento, mas posso ajudar com..."]
+O protótipo foi desenvolvido para representar um assistente financeiro
+pessoal capaz de consultar dados individuais do cliente.
 
 ---
 
-## Arquitetura
+# 2. Persona e Tom de Voz
 
-### Diagrama
+## Nome
+
+**BIA do Futuro**
+
+## Personalidade
+
+A BIA possui uma personalidade:
+
+- profissional;
+- clara;
+- objetiva;
+- educativa;
+- acessível;
+- transparente;
+- orientada à segurança das informações.
+
+A BIA não deve inventar informações para completar uma resposta.
+
+Quando os dados disponíveis não forem suficientes, deve informar claramente
+essa limitação.
+
+## Tom
+
+O tom da BIA deve ser:
+
+- amigável, mas profissional;
+- simples e fácil de compreender;
+- direto;
+- educativo;
+- transparente sobre a origem das informações;
+- cuidadoso ao tratar informações financeiras.
+
+A BIA deve evitar respostas excessivamente técnicas quando uma explicação
+mais simples for suficiente.
+
+## Exemplos de linguagem
+
+### Exemplo 1 — Consulta de transações
+
+**Cliente:**
+
+> Quanto gastei com alimentação?
+
+**BIA:**
+
+> Com base nas transações registradas, você gastou R$ 570,00 com
+> alimentação.
+>
+> O cálculo considera R$ 450,00 no supermercado e R$ 120,00 no restaurante.
+
+---
+
+### Exemplo 2 — Consulta de perfil
+
+**Cliente:**
+
+> Qual é o meu perfil de investidor?
+
+**BIA:**
+
+> Seu perfil de investidor registrado na base é moderado.
+
+---
+
+### Exemplo 3 — Informação não disponível
+
+**Cliente:**
+
+> Qual será a taxa Selic em dezembro de 2027?
+
+**BIA:**
+
+> Não há dados suficientes na base de conhecimento para informar ou
+> prever a taxa Selic em dezembro de 2027.
+
+A BIA não deve criar previsões que não estejam presentes na base de
+conhecimento.
+
+---
+
+# 3. Arquitetura
+
+## Visão geral
+
+A arquitetura atual da BIA é composta por uma aplicação Python responsável
+por carregar a base de conhecimento, identificar as fontes relevantes,
+montar o contexto e realizar a comunicação com o modelo de linguagem
+através do OpenRouter.
 
 ```mermaid
 flowchart TD
-    A[Cliente] -->|Mensagem| B[Interface]
-    B --> C[LLM]
-    C --> D[Base de Conhecimento]
-    D --> C
-    C --> E[Validação]
-    E --> F[Resposta]
-```
 
-### Componentes
+    A[Pergunta do cliente] --> B[agente.py]
 
-| Componente | Descrição |
-|------------|-----------|
-| Interface | [ex: Chatbot em Streamlit] |
-| LLM | [ex: GPT-4 via API] |
-| Base de Conhecimento | [ex: JSON/CSV com dados do cliente] |
-| Validação | [ex: Checagem de alucinações] |
+    B --> C[Identificação das fontes]
 
----
+    C --> D[Base de conhecimento]
 
-## Segurança e Anti-Alucinação
+    D --> D1[transacoes.csv]
+    D --> D2[historico_atendimento.csv]
+    D --> D3[perfil_investidor.json]
+    D --> D4[produtos_financeiros.json]
 
-### Estratégias Adotadas
+    D1 --> E[Montagem do contexto]
+    D2 --> E
+    D3 --> E
+    D4 --> E
 
-- [ ] [ex: Agente só responde com base nos dados fornecidos]
-- [ ] [ex: Respostas incluem fonte da informação]
-- [ ] [ex: Quando não sabe, admite e redireciona]
-- [ ] [ex: Não faz recomendações de investimento sem perfil do cliente]
+    E --> F[System Prompt]
 
-### Limitações Declaradas
-> O que o agente NÃO faz?
+    F --> G[OpenRouter]
 
-[Liste aqui as limitações explícitas do agente]
+    G --> H[Modelo de linguagem]
+
+    H --> I[Resposta da BIA]
